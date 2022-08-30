@@ -1,12 +1,10 @@
 //modified by: Yeana Bond
-//date: 08/23/2022
-//
+//date: 8/29/2022
+//note: commented-out lines are kept to remember what we learned in the class times.
 //author: Gordon Griesel
 //date: Spring 2022
 //purpose: get openGL working on your personal computer
 //
-//
-//openGL : GL/glx.h 
 #include <iostream>
 using namespace std;
 #include <stdio.h>
@@ -17,32 +15,20 @@ using namespace std;
 #include <cmath>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
-
 #include <GL/glx.h>
 
 
 //some structures
-//you can add some variabls in Global class 
-// global variables are an option to use when properly handled in real world
-// event-driven program 
-// when not done it runs forever in a constant loop
+
 class Global {
 public:
 	int xres, yres;
-	float w; 
-	float dir;
-	// two dimensional screen x and y positions 
-	float pos[2];
-	Global();
-	// moved to down side of the code 
-	//{
-	    	//w = 20.0f;
-		//dir = 25.0f;
-		//pos[0] = 0.0f + 2;
-		//pos[1] = g.yres / 2.0f;
-	//}
+	int changed_size;
+	int r, g, b;
 
-}g;
+
+	Global();
+} g;
 
 class X11_wrapper {
 private:
@@ -79,7 +65,6 @@ int main()
 	int done = 0;
 	while (!done) {
 		//Process external events.
-		//infinite loop that looks for an event - MVC architecture 
 		while (x11.getXPending()) {
 			XEvent e = x11.getXNextEvent();
 			x11.check_resize(&e);
@@ -98,12 +83,11 @@ Global::Global()
 {
 	xres = 400;
 	yres = 200;
-	w = 20.0f;
-	dir = 25.0f;
-	pos[0] = 0.0f + w;
-	pos[1] = yres / 2.0f;
+	changed_size = 3;
+	r = 0;
+	g = 0;
+	b = 0;
 }
-
 
 X11_wrapper::~X11_wrapper()
 {
@@ -189,6 +173,16 @@ void X11_wrapper::check_resize(XEvent *e)
 	if (xce.width != g.xres || xce.height != g.yres) {
 		//Window size did change.
 		reshape_window(xce.width, xce.height);
+		if (xce.width < g.xres) {
+		
+			g.changed_size = 0;
+
+		}
+
+		else {
+
+			g.changed_size = 1;
+		}
 	}
 }
 //-----------------------------------------------------------------------------
@@ -265,46 +259,81 @@ void init_opengl(void)
 
 void physics()
 {
-	g.pos[0] += g.dir;
-	if (g.pos[0] >= (g.xres-g.w)) {
-		g.pos[0] = (g.xres-g.w);
-		g.dir = -g.dir;
-	}
-
-	if (g.pos[0] <= g.w) {
-		g.pos[0] = g.w;
-		g.dir = -g.dir;
-	}
 
 }
 
 void render()
 {
+	static float w = 20.0f;
+	static float dir = 25.0f;
+	static float pos[2] = {0.0f+w, g.yres/2.0f};
+        // Draw box.
+	if (g.xres < 40) {
+	}
 
-       // these varibales are related to physics 
-	//static float w = 20.0f;
-	//static float dir = 25.0f;
-	//static float pos[2] = {0.0f+w, g.yres/2.0f};
-	// moved to Global class
-	glClear(GL_COLOR_BUFFER_BIT);
-	//Draw box.
-	glPushMatrix();
-	// three unsigned bites (RGB) values 
-	glColor3ub(150, 160, 220);
-	// f means floats 
-	glTranslatef(g.pos[0], g.pos[1], 0.0f);
+	else {
+	
+
+	        glClear(GL_COLOR_BUFFER_BIT);
+		glPushMatrix();
+		glColor3ub(0,0,g.b);
+		if (pos[0] == (g.xres - w) || (pos[0] == w)) {
+			glColor3ub(200,0,0);
+		}
+
+		if (pos[0] != (g.xres - w) || (pos[0] != w)) {
+
+			if (g.changed_size == 1) {
+			    // size of the window increased
+			    g.b += 30;
+		    	    g.r -= 10;	
+			}
+
+			if (g.changed_size == 0 && g.b > 0) {
+			    // size of the window decreased
+			    g.b -= 10;
+			    g.r += 30;
+			}
+
+			if (g.changed_size == 0 && g.b <= 0) {
+			    g.b = 0;
+			    g.r += 15;
+			}
+
+			//If you want to see the gradual color change
+			//between red and blue when the window is first up
+			//please, uncomment this else block 
+			//else {
+			//    g.r += 10;
+			//    g.g += 10;
+			//    g.b += 10;
+			//}
+	
+		}
+
+	}
+
+	glTranslatef(pos[0], pos[1], 0.0f);
 	glBegin(GL_QUADS);
-	// four vertices 
-		glVertex2f(-g.w, -g.w);
-		glVertex2f(-g.w,  g.w);
-		glVertex2f( g.w,  g.w);
-		glVertex2f( g.w, -g.w);
+		glVertex2f(-w, -w);
+		glVertex2f(-w,  w);
+		glVertex2f( w,  w);
+		glVertex2f( w, -w);
 	glEnd();
 	glPopMatrix();
+	pos[0] += dir;
+
+
+	if (pos[0] > (g.xres-w)) {
+		pos[0] = (g.xres-w);
+		dir = -dir;
+	}
+
+	if (pos[0] <= w) {
+		pos[0] = w;
+		dir = -dir;
+	}
+
 }
-
-
-
-
 
 
